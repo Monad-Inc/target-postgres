@@ -329,7 +329,7 @@ class DbSync:
         if without_schema:
             return f'"{pg_table_name.lower()}"'
 
-        return f'{self.schema_name}."{pg_table_name.lower()}"'
+        return f'"{self.schema_name}"."{pg_table_name.lower()}"'
 
     def record_primary_key_string(self, record):
         if len(self.stream_schema_message['key_properties']) == 0:
@@ -509,7 +509,7 @@ class DbSync:
             )
 
         if len(schema_rows) == 0:
-            query = "CREATE SCHEMA IF NOT EXISTS {}".format(schema_name)
+            query = 'CREATE SCHEMA IF NOT EXISTS "{}"'.format(schema_name)
             self.logger.info("Schema '%s' does not exist. Creating... %s", schema_name, query)
             self.query(query)
 
@@ -524,7 +524,7 @@ class DbSync:
     def get_table_columns(self, table_name):
         return self.query("""SELECT column_name, data_type
       FROM information_schema.columns
-      WHERE lower(table_name) = %s AND lower(table_schema) = %s""", (table_name.replace("\"", "").lower(),
+      WHERE lower(table_name) = %s AND lower(table_schema) = '%s'""", (table_name.replace("\"", "").lower(),
                                                                      self.schema_name.lower()))
 
     def update_columns(self):
@@ -582,13 +582,13 @@ class DbSync:
         stream_schema_message = self.stream_schema_message
         stream = stream_schema_message['stream']
         table_name = self.table_name(stream, without_schema=True)
-        found_tables = [table for table in (self.get_tables()) if f'"{table["table_name"].lower()}"' == table_name]
+        found_tables = [table for table in (self.get_tables()) if f'{table["table_name"].lower()}' == table_name]
         if len(found_tables) == 0:
             query = self.create_table_query()
-            self.logger.info("Table '%s' does not exist. Creating... %s", table_name, query)
+            self.logger.info("Table %s does not exist. Creating... %s", table_name, query)
             self.query(query)
 
             self.grant_privilege(self.schema_name, self.grantees, self.grant_select_on_all_tables_in_schema)
         else:
-            self.logger.info("Table '%s' exists", table_name)
+            self.logger.info("Table %s exists", table_name)
             self.update_columns()
